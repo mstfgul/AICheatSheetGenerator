@@ -1,7 +1,4 @@
 ---
-noteId: "b8f2aae06bb111f09140e5dc9fcdc614"
-tags: []
-
 ---
 
 # 🤖 AI Cheat Sheet Generator
