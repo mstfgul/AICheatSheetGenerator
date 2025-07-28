@@ -6,6 +6,7 @@ from rich.prompt import Prompt, Confirm
 from rich.table import Table
 from rich.panel import Panel
 from cheat_sheet_agent import CheatSheetAgent
+from practice_generator import PracticeGenerator
 
 console = Console()
 
@@ -129,11 +130,27 @@ def examples():
     
     console.print(table)
     
-    console.print("\n[bold yellow]Example Commands:[/bold yellow]")
+    console.print("\n[bold yellow]📋 Cheat Sheet Commands:[/bold yellow]")
     console.print("• [dim]python main.py generate -t 'pandas' -d intermediate[/dim]")
     console.print("• [dim]python main.py generate -t 'React Hooks' -f quick-reference --preview[/dim]")
     console.print("• [dim]python main.py generate -t 'Docker' -s 'commands,dockerfile,compose'[/dim]")
     console.print("• [dim]python main.py interactive[/dim]")
+    
+    console.print("\n[bold green]🎯 Practice Exercise Commands:[/bold green]")
+    console.print("• [dim]python main.py practice -t 'pandas' -d intermediate -c 25[/dim]")
+    console.print("• [dim]python main.py practice -t 'JavaScript' -d advanced --preview[/dim]")
+    console.print("• [dim]python main.py practice -t 'React' -f 'hooks,state,components'[/dim]")
+    console.print("• [dim]python main.py practice-interactive[/dim]")
+    
+    console.print("\n[bold yellow]🚀 Complete Learning Package:[/bold yellow]")
+    console.print("• [dim]python main.py complete -t 'pandas' -d intermediate -e 30[/dim]")
+    console.print("• [dim]python main.py complete -t 'Docker' -d beginner --preview[/dim]")
+    
+    console.print("\n[bold cyan]💡 Pro Tips:[/bold cyan]")
+    console.print("• Use [bold]complete[/bold] command to get both cheat sheet + practice exercises")
+    console.print("• Use [bold]--preview[/bold] flag to see content before saving")
+    console.print("• Practice exercises include solutions, projects, and debugging challenges")
+    console.print("• Mix difficulty levels with [bold]-d mixed[/bold] for progressive learning")
 
 @cli.command()
 def setup():
@@ -152,6 +169,107 @@ def setup():
     console.print("   [dim]python main.py interactive[/dim]\n")
     
     console.print("[yellow]💡 Get your OpenAI API key from: https://platform.openai.com/api-keys[/yellow]")
+
+@cli.command()
+@click.option('--topic', '-t', help='Technology/topic for practice exercises', required=True)
+@click.option('--difficulty', '-d', 
+              type=click.Choice(['beginner', 'intermediate', 'advanced', 'mixed']),
+              default='intermediate',
+              help='Difficulty level')
+@click.option('--count', '-c', type=int, default=20, help='Number of exercises to generate')
+@click.option('--no-solutions', is_flag=True, help='Exclude detailed solutions')
+@click.option('--preview', '-p', is_flag=True, help='Preview before saving')
+@click.option('--focus', '-f', help='Comma-separated list of focus areas')
+def practice(topic, difficulty, count, no_solutions, preview, focus):
+    """Generate comprehensive practice exercises for a specific technology or topic."""
+    
+    console.print(Panel.fit(
+        f"[bold green]🎯 AI PRACTICE GENERATOR[/bold green]\n"
+        f"[dim]Creating practice exercises for: [bold]{topic}[/bold][/dim]",
+        border_style="green"
+    ))
+    
+    generator = PracticeGenerator()
+    
+    focus_areas = None
+    if focus:
+        focus_areas = [area.strip() for area in focus.split(',')]
+    
+    filepath = generator.create_practice_document(
+        topic=topic,
+        difficulty=difficulty,
+        exercise_count=count,
+        include_solutions=not no_solutions,
+        focus_areas=focus_areas,
+        preview=preview
+    )
+    
+    if filepath:
+        console.print(f"\n[green]🎉 Successfully created practice document![/green]")
+        console.print(f"[dim]File location: {filepath}[/dim]")
+    else:
+        console.print("[red]❌ Failed to generate practice document[/red]")
+
+@cli.command()
+def practice_interactive():
+    """Interactive mode for creating practice exercises."""
+    generator = PracticeGenerator()
+    filepath = generator.interactive_practice_creation()
+    
+    if filepath:
+        console.print(f"\n[green]🎉 Successfully created practice document![/green]")
+        console.print(f"[dim]File location: {filepath}[/dim]")
+    else:
+        console.print("[red]❌ Failed to generate practice document[/red]")
+
+@cli.command()
+@click.option('--topic', '-t', help='Topic to create both cheat sheet and practice for', required=True)
+@click.option('--difficulty', '-d', 
+              type=click.Choice(['beginner', 'intermediate', 'advanced']),
+              default='intermediate',
+              help='Difficulty level')
+@click.option('--exercises', '-e', type=int, default=20, help='Number of practice exercises')
+@click.option('--preview', '-p', is_flag=True, help='Preview before saving')
+def complete(topic, difficulty, exercises, preview):
+    """Generate both cheat sheet and practice exercises for a topic."""
+    
+    console.print(Panel.fit(
+        f"[bold yellow]🚀 COMPLETE LEARNING PACKAGE[/bold yellow]\n"
+        f"[dim]Creating cheat sheet + practice exercises for: [bold]{topic}[/bold][/dim]",
+        border_style="yellow"
+    ))
+    
+    # Generate cheat sheet first
+    console.print("[cyan]📋 Step 1: Generating cheat sheet...[/cyan]")
+    cheat_agent = CheatSheetAgent()
+    cheat_filepath = cheat_agent.create_cheat_sheet(
+        topic=topic,
+        difficulty=difficulty,
+        preview=preview
+    )
+    
+    if cheat_filepath:
+        console.print(f"[green]✅ Cheat sheet created: {cheat_filepath}[/green]")
+    else:
+        console.print("[red]❌ Failed to create cheat sheet[/red]")
+        return
+    
+    # Generate practice exercises
+    console.print("[cyan]🎯 Step 2: Generating practice exercises...[/cyan]")
+    practice_generator = PracticeGenerator()
+    practice_filepath = practice_generator.create_practice_document(
+        topic=topic,
+        difficulty=difficulty,
+        exercise_count=exercises,
+        preview=preview
+    )
+    
+    if practice_filepath:
+        console.print(f"[green]✅ Practice document created: {practice_filepath}[/green]")
+        console.print(f"\n[bold green]🎉 Complete learning package ready![/bold green]")
+        console.print("[dim]You now have both reference material and hands-on exercises![/dim]")
+    else:
+        console.print("[red]❌ Failed to create practice document[/red]")
 
 if __name__ == '__main__':
     cli()
